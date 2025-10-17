@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
+
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-80px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+/* in your global CSS */
+.Toastify__toast {
+  z-index: 9999 !important;
+}
+
+
+*{
+
+}
