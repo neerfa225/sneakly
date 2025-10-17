@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Wishlist from './pages/Wishlist/Wishlist'
 import "./App.css";
-import Shop from "./pages/ProductList/shop";
+import Shop from "./pages/ProductList/Shop";
 import Home from "./pages/Home/Home";
 import { Route, Routes } from "react-router-dom";
 import Navbar from "./components/Navbar";
