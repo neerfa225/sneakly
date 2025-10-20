@@ -5,7 +5,6 @@ import Shop from "./pages/ProductList/Shop";
 import Home from "./pages/Home/Home";
 import { Route, Routes } from "react-router-dom";
 import Navbar from "./components/Navbar";
-import products from "./assets/product";
 import Productpage from "./pages/ProductPage/Productpage";
 import Footer from "./components/Footer";
 import Cart from './pages/Cart/Cart'
