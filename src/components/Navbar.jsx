@@ -119,12 +119,12 @@ const Navbar = () => {
           >
             Wishlist
           </Link>
-          <button
+          <Link to="/reg"><button
             onClick={() => setMobileMenu(false)}
             className="border border-[#112444] py-2 px-6 rounded-full hover:bg-[#112444] hover:text-white transition duration-300 font-semibold"
           >
             Sign In
-          </button>
+          </button></Link>
         </div>
        )}
     </div>
