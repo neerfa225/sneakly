@@ -108,12 +108,12 @@ const Register = () => {
         <div className='w-[150px] h-[150px] bg-blue-950 rounded-full absolute top-[-20px] left-[460px]'></div>
         <div className='w-[200px] h-[200px] rounded-full absolute bottom-0 right-[260px]'></div>
 
-        <div className='w-[90%] mt-[5px] mx-auto md:w-[55%] sm:w-[60%] shadow-[0_7px_29px_0px_rgba(100,100,111,0.2)] rounded-xl flex flex-col-reverse lg:flex lg:flex-row z-10 relative bg-white'>
-          <div className='w-[90%] lg:w-[50%] flex flex-col gap-2 p-7'>
-            <h2 className='text-3xl font-bold'>
+        <div className='w-[90%] mt-[5px] mx-auto md:w-[55%] sm:w-[60%] shadow-[0_7px_29px_0px_rgba(100,100,111,0.2)] rounded-xl flex flex-col-reverse justify-center items-center lg:flex lg:flex-row z-10 relative bg-white'>
+          <div className='w-[90%] lg:w-[50%]  flex flex-col gap-2 p-7'>
+            <h2 className='text-3xl font-bold text-center'>
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </h2>
-            <p className='font-[16px]'>
+            <p className='font-[16px] text-center '>
               {isLogin ? 'Login to your account' : 'Create Your Sneakly Account'}
             </p>
 
@@ -171,7 +171,7 @@ const Register = () => {
             </div>
           </div>
 
-          <div className='w-[100%] lg:w-[50%] rounded-xl bg-[#112444] text-white flex justify-start items-end h-auto p-7'>
+          <div className='w-[100%] lg:w-[50%] rounded-xl bg-[#112444] text-white flex justify-center items-end h-auto p-7'>
             <div className='flex flex-col gap-3.5 mb-2'>
               <div className='text-3xl'>
                 Welcome to your <br />
