@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import products from "../../assets/product";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState([]);
@@ -29,6 +31,8 @@ const Wishlist = () => {
     );
 
   return (
+    <>
+    <Navbar/>
     <div className="w-[90%] mx-auto my-25 animate__animated animate__fadeIn">
       <h2 className="font-bold mb-6 text-center text-[#112444] text-3xl">MY WISHLIST</h2>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2  md:grid-cols-3 lg:grid-cols-4 ">
@@ -53,6 +57,8 @@ const Wishlist = () => {
         ))}
       </div>
     </div>
+    <Footer/>
+</>
   );
 };
 

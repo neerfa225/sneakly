@@ -74,9 +74,9 @@ const Navbar = () => {
           <Link to="/wish">
             <i className="fa-solid fa-heart cursor-pointer  "></i>
           </Link>
-         <button className="border border-[#112444] py-[6px] px-[22px] rounded-full cursor-pointer hover:bg-[#112444] hover:text-white transition duration-300 font-semibold">
+        <Link to='/reg'><button className="border border-[#112444] py-[6px] px-[22px] rounded-full cursor-pointer hover:bg-[#112444] hover:text-white transition duration-300 font-semibold">
             Sign In
-          </button> 
+          </button> </Link> 
         </div>
         <div className='md:hidden 'onClick={()=>setMobileMenu(!mobileMenu)}>
           <i className={mobileMenu ? "fa-solid fa-xmark" : "fa-solid fa-bars"}></i>

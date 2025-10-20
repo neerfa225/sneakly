@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import products from "../../assets/product";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 
 
 
@@ -49,6 +51,8 @@ cart.forEach(item => {
   }
 
   return (
+    <>
+    <Navbar/>
     <div className="w-[90%] mx-auto mt-[140px] flex flex-wrap justify-center gap-[60px] animate__animated animate__fadeIn  sm:flex sm:justify-between ">
       <div className="w-[90%] sm:w-[50%]">
       
@@ -123,6 +127,8 @@ cart.forEach(item => {
 </div>
 
  </div>
+ <Footer/>
+ </>
   );
 };
 

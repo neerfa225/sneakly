@@ -3,6 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import products from "../../assets/product";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 
 const Productpage = () => {
   const { id } = useParams();
@@ -68,6 +70,8 @@ const Productpage = () => {
   };
 
   return (
+    <>
+    <Navbar/>
    <div className="w-[90%]  mx-auto my-10  mt-[120px] flex flex-col gap-12 sm:flex-row animate__animated animate__fadeIn">
         <div className="w-full sm:w-1/2 bg-gray-50 p-6 rounded-2xl shadow-lg overflow-hidden">
         <img
@@ -130,6 +134,8 @@ const Productpage = () => {
         <ToastContainer position="top-right" autoClose={2000} theme="colored" style={{ marginTop: "70px" }} />
       </div>
     </div>
+    <Footer/>
+    </>
   );
 };
 

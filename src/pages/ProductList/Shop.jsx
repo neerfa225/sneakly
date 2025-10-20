@@ -3,6 +3,8 @@ import products from "../../assets/product";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Link } from "react-router-dom";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 const Shop = () => {
   const [wishlist, setWishlist] = useState([]);
   
@@ -30,6 +32,8 @@ const Shop = () => {
 
   
   return (
+    <>
+    <Navbar/>
     <div className="w-[90%] mx-auto my-10 animate__animated animate__fadeIn">
       <h2 className="text-2xl font-bold mb-6">Shop</h2>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -74,6 +78,8 @@ const Shop = () => {
         style={{ marginTop: "70px" }}
       />
     </div>
+    <Footer/>
+    </>
   );
 };
 
