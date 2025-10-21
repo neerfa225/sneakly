@@ -22,12 +22,12 @@ const Wishlist = () => {
   );
 
   if (wishlistProducts.length === 0)
-    return (
+    return (<><Navbar/>
       <div className="w-[90%] mx-auto my-10 animate__animated animate__fadeIn">
-        
+         
         <div className="flex flex-col gap-3.5 justify-center items-center mt-[160px]"><i className="fa-solid fa-bag-shopping  text-[250px]" style={{color: "#ced4de"}}></i><p>Your wishlist is empty.</p></div>
-        
-      </div>
+         
+      </div><Footer/></>
     );
 
   return (
