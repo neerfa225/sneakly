@@ -9,7 +9,9 @@ import Productpage from "./pages/ProductPage/Productpage";
 import Footer from "./components/Footer";
 import Cart from './pages/Cart/Cart'
 import ScrollToTop from "./components/Scrolltop";
-import LoginReg from "./pages/Login-register/Login-reg";
+import Register from "./components/LoginRegisterPage";
+import Login from "./components/Login";
+import Otp from "./components/Otp";
 function App() {
   return (
     <>
@@ -21,7 +23,10 @@ function App() {
         <Route path="/wish" element={<Wishlist  />} />
         <Route path="/product/:id" element={<Productpage  />} />
         <Route path="/cart" element={<Cart/>} />
-        <Route path="/reg" element={<LoginReg/>} />
+        <Route path="/reg" element={<Register/>} />
+         <Route path="/login" element={<Login/>} />
+         <Route path="/verify-otp" element={<Otp/>} />
+
       </Routes>
       
     </>
