@@ -18,7 +18,56 @@ body {
 html {
   scroll-behavior: smooth;
 }
-/* in your global CSS */
+
 .Toastify__toast {
   z-index: 9999 !important;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #fff;
+}
+
+
+
+
+@layer utilities {
+  @keyframes float1 {
+    0%, 100% {
+      transform: translate(0, 0);
+    }
+    50% {
+      transform: translate(20px, -30px);
+    }
+  }
+
+  @keyframes float2 {
+    0%, 100% {
+      transform: translate(0, 0);
+    }
+    50% {
+      transform: translate(-25px, 25px);
+    }
+  }
+
+  @keyframes float3 {
+    0%, 100% {
+      transform: translate(0, 0);
+    }
+    50% {
+      transform: translate(30px, 15px);
+    }
+  }
+
+  .animate-float1 {
+    animation: float1 6s ease-in-out infinite;
+  }
+  .animate-float2 {
+    animation: float2 8s ease-in-out infinite;
+  }
+  .animate-float3 {
+    animation: float3 10s ease-in-out infinite;
+  }
 }

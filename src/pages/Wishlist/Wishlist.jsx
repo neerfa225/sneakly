@@ -1,59 +1,120 @@
 import React, { useState, useEffect } from "react";
-import products from "../../assets/product";
+import axios from "axios";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState([]);
-  const [userKey, setUserKey] = useState("wishlist_guest");
+  const [loading, setLoading] = useState(true);
 
-  // ✅ Load user-specific wishlist from localStorage
-  useEffect(() => {
-    const storedUser = localStorage.getItem("userData");
+  // ✅ Normalize wishlist data into consistent format
+  const normalizeWishlist = (items) =>
+    items.map((item) => ({
+      id: item.id,
+      product_id: item.product_id || item.product,
+      sku_id: item.sku_id || item.sku?.id,
+      product_name: item.product_name || item.name,
+      mainimage: item.mainimage?.startsWith("http")
+        ? item.mainimage
+        : `http://192.168.1.94:8002${item.mainimage}`,
+      price: item.sku?.price || item.price || 0,
+    }));
 
-    if (storedUser) {
-      const parsed = JSON.parse(storedUser);
+  // ✅ Fetch and sync wishlist
+ useEffect(() => {
+  const storedUser = localStorage.getItem("userData");
+  if (!storedUser) {
+    setLoading(false);
+    return;
+  }
 
-      // decode email from access token if needed
-      const tokenParts = parsed.access_token?.split(".");
-      let email = parsed.email;
-      if (!email && tokenParts?.length === 3) {
-        try {
-          const decoded = JSON.parse(atob(tokenParts[1]));
-          email = decoded.email;
-        } catch (err) {
-          console.error("Token decode failed", err);
-        }
-      }
+  const user = JSON.parse(storedUser);
+  const token = user?.access_token;
+  const email = user?.email;
+  const wishlistKey = `wishlist_${email}`;
 
-      // unique wishlist key per user
-      const key = email ? `wishlist_${email}` : "wishlist_guest";
-      setUserKey(key);
-
-      // load user-specific wishlist
-      const saved = JSON.parse(localStorage.getItem(key) || "[]");
-      setWishlist(saved);
-    } else {
-      setUserKey("wishlist_guest");
-      const saved = JSON.parse(localStorage.getItem("wishlist_guest") || "[]");
-      setWishlist(saved);
-    }
-  }, []);
-
-  // ✅ Remove item from wishlist
-  const removeItem = (id) => {
-    const updated = wishlist.filter((item) => item !== id);
-    setWishlist(updated);
-    localStorage.setItem(userKey, JSON.stringify(updated)); // correct key
+  const loadWishlist = () => {
+    const savedWishlist = JSON.parse(localStorage.getItem(wishlistKey) || "[]");
+    setWishlist(normalizeWishlist(savedWishlist));
   };
 
-  // ✅ Get wishlist products
-  const wishlistProducts = products.filter((item) =>
-    wishlist.includes(item.id)
-  );
+  // ✅ Load once initially
+  loadWishlist();
 
-  // ✅ Empty Wishlist Page
-  if (wishlistProducts.length === 0)
+  // ✅ Fetch latest from backend (once)
+  axios
+    .get("http://192.168.1.94:8002/api/list-wishlist/", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    .then((res) => {
+      const fetchedWishlist = normalizeWishlist(res.data?.data || []);
+      setWishlist(fetchedWishlist);
+      localStorage.setItem(wishlistKey, JSON.stringify(fetchedWishlist));
+    })
+    .catch((err) => {
+      console.error("Error fetching wishlist:", err);
+    })
+    .finally(() => setLoading(false));
+
+  // ✅ Listen for both storage events and custom triggers from same tab
+  const handleStorageUpdate = (e) => {
+    if (e.key === wishlistKey || e.type === "wishlistUpdated") {
+      loadWishlist();
+    }
+  };
+
+  window.addEventListener("storage", handleStorageUpdate);
+  window.addEventListener("wishlistUpdated", handleStorageUpdate);
+
+  return () => {
+    window.removeEventListener("storage", handleStorageUpdate);
+    window.removeEventListener("wishlistUpdated", handleStorageUpdate);
+  };
+}, []);
+
+
+  // ✅ Remove wishlist item (sync backend + localStorage)
+  const removeItem = async (wishlistId) => {
+    const storedUser = localStorage.getItem("userData");
+    if (!storedUser) return;
+
+    const user = JSON.parse(storedUser);
+    const token = user?.access_token;
+    const email = user?.email;
+    const wishlistKey = `wishlist_${email}`;
+
+    try {
+      await axios.post(
+        "http://192.168.1.94:8002/api/remove-wishlist/",
+        { wishlist_ids: [wishlistId] },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // ✅ Update local state
+      const updatedWishlist = wishlist.filter((item) => item.id !== wishlistId);
+      setWishlist(updatedWishlist);
+
+      // ✅ Update localStorage
+      localStorage.setItem(wishlistKey, JSON.stringify(updatedWishlist));
+    } catch (err) {
+      console.error("Error removing wishlist item:", err);
+      alert("Failed to remove item from wishlist.");
+    }
+  };
+
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <div className="flex justify-center items-center h-screen">
+          <p className="text-gray-500">Loading wishlist...</p>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  if (!wishlist.length) {
     return (
       <>
         <Navbar />
@@ -71,8 +132,8 @@ const Wishlist = () => {
         <Footer />
       </>
     );
+  }
 
-  // ✅ Wishlist with Items
   return (
     <>
       <Navbar />
@@ -80,24 +141,25 @@ const Wishlist = () => {
         <h2 className="font-bold mb-6 text-center text-[#112444] text-3xl">
           MY WISHLIST
         </h2>
+
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {wishlistProducts.map((item) => (
+          {wishlist.map((item) => (
             <div
               key={item.id}
               className="bg-white p-4 rounded-xl shadow-md flex flex-col items-center"
             >
               <img
-                src={item.image}
-                alt={item.name}
-                className="w-full h-60 object-cover rounded-md mb-4"
+                src={item.mainimage}
+                alt={item.product_name}
+                className="w-full h-60 rounded-md mb-4"
               />
               <div className="flex justify-between items-start w-full">
                 <div>
-                  <h3 className="text-lg font-semibold">{item.name}</h3>
-                  <p className="text-gray-500">${item.price}</p>
+                  <h3 className="text-lg font-semibold">{item.product_name}</h3>
+                  <p className="text-gray-500">₹{item.price}</p>
                 </div>
                 <button
-                  className="bg-[#112444] text-white px-3 py-1 rounded-md text-sm hover:bg-[#0e1f3a] transition duration-200"
+                  className="bg-[#112444] text-white px-3 py-1 rounded-md text-sm hover:bg-[#0e1f3a] transition duration-200  cursor-pointer"
                   onClick={() => removeItem(item.id)}
                 >
                   Remove

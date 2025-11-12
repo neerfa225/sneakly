@@ -14,7 +14,6 @@ const Navbar = () => {
     if (storedUser) {
       const parsed = JSON.parse(storedUser);
 
-    //decoding from tokens
       const tokenParts = parsed.access_token?.split(".");
       if (tokenParts && tokenParts.length === 3) {
         try {
@@ -31,6 +30,8 @@ const Navbar = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("userData");
+    localStorage.removeItem("cart_merged");
+
     setUser(null);
     navigate("/login");
   };
@@ -127,7 +128,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Dropdown */}
+   
       {mobileMenu && (
         <div className="drop-down flex flex-col items-center justify-center gap-2.5 p-5 bg-white w-full md:hidden">
           <Link to="/" onClick={() => setMobileMenu(false)} className="hover:text-[#112444]">

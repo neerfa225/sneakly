@@ -91,9 +91,11 @@ const Register = () => {
   return (
     <>
       <div className="flex justify-center items-center relative w-full min-h-screen md:h-[100vh] overflow-hidden">
-        <div className='w-[150px] h-[150px] bg-blue-950 rounded-full absolute left-[-120px] z-0 bg-radial-[at_50%_75%] from-white to-blue-950 to-90%'></div>
-        <div className='w-[150px] h-[150px] bg-blue-950 rounded-full absolute top-[-20px] left-[460px] z-0 bg-radial-[at_150%_25%] from-white to-blue-950 to-74%'></div>
-        <div className='w-[200px] h-[200px] rounded-full absolute bottom-[-10px] right-[260px] bg-radial-[at_25%_25%] from-white to-blue-950 to-75% z-0'></div>
+        <div className="w-[150px] h-[150px] bg-blue-950 rounded-full absolute left-[-120px] z-0 bg-radial-[at_50%_75%] from-white to-blue-950 to-90% animate-float1"></div>
+
+<div className="w-[150px] h-[150px] bg-blue-950 rounded-full absolute top-[-20px] left-[460px] z-0 bg-radial-[at_150%_25%] from-white to-blue-950 to-74% animate-float2"></div>
+
+<div className="w-[200px] h-[200px] rounded-full absolute bottom-[-10px] right-[260px] bg-radial-[at_25%_25%] from-white to-blue-950 to-75% z-0 animate-float3"></div>
 
         <div className='w-[90%] mt-[5px] mx-auto md:w-[55%] sm:w-[60%] shadow-[0_7px_29px_0px_rgba(100,100,111,0.2)] rounded-xl flex flex-col-reverse justify-center lg:flex lg:flex-row z-10 relative bg-white'>
 
