@@ -3,72 +3,133 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import ProductCard from "./Productcard";
 const Productdisplay = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Wishlist + Cart
   const [wishlist, setWishlist] = useState([]);
   const [wishlistKey, setWishlistKey] = useState("wishlist_guest");
 
-  // ✅ Load wishlist when component mounts
+  const [cart, setCart] = useState([]);
+  const [cartKey, setCartKey] = useState("cart_guest");
+
+  // ---------------------------------------------
+  // LOAD USER + WISHLIST + CART (Same as Shop.jsx)
+  // ---------------------------------------------
+
   useEffect(() => {
     const storedUser = localStorage.getItem("userData");
 
     if (storedUser) {
-      const user = JSON.parse(storedUser);
-      const email = user?.email || "guest";
-      const key = `wishlist_${email}`;
-      setWishlistKey(key);
+      const parsed = JSON.parse(storedUser);
+      const email = parsed.email || "guest";
 
-      const savedWishlist = JSON.parse(localStorage.getItem(key) || "[]");
-      const normalized = savedWishlist.map((item) => ({
-        product_id: item.product_id || item.product,
-        sku_id: item.sku_id || item.sku?.id,
+      const wKey = `wishlist_${email}`;
+      const cKey = `cart_${email}`;
+      setWishlistKey(wKey);
+      setCartKey(cKey);
+
+      // Load wishlist
+      const savedWishlist = JSON.parse(localStorage.getItem(wKey) || "[]");
+      const normalizedWishlist = savedWishlist.map((i) => ({
+        product_id: i.product_id || i.product,
+        sku_id: i.sku_id || i.sku?.id,
       }));
-      setWishlist(normalized);
+      setWishlist(normalizedWishlist);
+
+      // Load cart
+      const savedCart = JSON.parse(localStorage.getItem(cKey) || "[]");
+      setCart(savedCart);
     } else {
-      // Guest user
+      // Guest Keys
+      setWishlistKey("wishlist_guest");
+      setCartKey("cart_guest");
+
       const savedWishlist = JSON.parse(
         localStorage.getItem("wishlist_guest") || "[]"
       );
-      const normalized = savedWishlist.map((item) => ({
-        product_id: item.product_id || item.product,
-        sku_id: item.sku_id || item.sku?.id,
+      const savedCart = JSON.parse(localStorage.getItem("cart_guest") || "[]");
+
+      const normalizedWishlist = savedWishlist.map((i) => ({
+        product_id: i.product_id || i.product,
+        sku_id: i.sku_id || i.sku?.id,
       }));
-      setWishlist(normalized);
+
+      setWishlist(normalizedWishlist);
+      setCart(savedCart);
     }
   }, []);
 
-  // ✅ Listen for external updates (wishlist changes in other tabs/pages)
+  // ---------------------------------------------
+  // CART SYNC ACROSS TABS (Same as Shop.jsx)
+  // ---------------------------------------------
+  useEffect(() => {
+    const handleFocus = () => {
+      const storedUser = JSON.parse(localStorage.getItem("userData") || "{}");
+      const email = storedUser?.email;
+      const token = storedUser?.access_token;
+
+      if (email && token) {
+        fetchBackendCart();
+      } else {
+        const guestCart = JSON.parse(
+          localStorage.getItem("cart_guest") || "[]"
+        );
+        setCart(guestCart);
+      }
+    };
+
+    handleFocus();
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
+  useEffect(() => {
+    const syncCart = () => {
+      const updated = JSON.parse(localStorage.getItem(cartKey) || "[]");
+      setCart(updated);
+    };
+
+    window.addEventListener("cartUpdated", syncCart);
+    window.addEventListener("storage", syncCart);
+
+    return () => {
+      window.removeEventListener("cartUpdated", syncCart);
+      window.removeEventListener("storage", syncCart);
+    };
+  }, [cartKey]);
+
   useEffect(() => {
     const syncWishlist = () => {
       const saved = JSON.parse(localStorage.getItem(wishlistKey) || "[]");
-      const normalized = saved.map((item) => ({
-        product_id: item.product_id || item.product,
-        sku_id: item.sku_id || item.sku?.id,
+      const normalized = saved.map((i) => ({
+        product_id: i.product_id || i.product,
+        sku_id: i.sku_id || i.sku?.id,
       }));
       setWishlist(normalized);
     };
 
-    window.addEventListener("storage", syncWishlist);
     window.addEventListener("wishlistUpdated", syncWishlist);
+    window.addEventListener("storage", syncWishlist);
 
     return () => {
-      window.removeEventListener("storage", syncWishlist);
       window.removeEventListener("wishlistUpdated", syncWishlist);
+      window.removeEventListener("storage", syncWishlist);
     };
   }, [wishlistKey]);
 
-  // ✅ Fetch products
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const response = await axios.get(
-          "http://192.168.1.94:8002/api/product-list/?page=1&brand=4&price=100,4000"
+          "http://192.168.1.94:8002/api/product-list/"
         );
         setProducts(response.data.results || response.data || []);
-      } catch (error) {
-        console.error("Error fetching products:", error);
+      } catch (err) {
+        console.error("Product load error", err);
       } finally {
         setLoading(false);
       }
@@ -77,130 +138,224 @@ const Productdisplay = () => {
     fetchProducts();
   }, []);
 
-  // ✅ Toggle wishlist (single API for add/remove)
+  const fetchBackendCart = async () => {
+    try {
+      const storedUser = JSON.parse(localStorage.getItem("userData") || "{}");
+      const token = storedUser?.access_token;
+      const email = storedUser?.email;
+
+      if (!token || !email) return;
+
+      const response = await axios.get(
+        "http://192.168.1.94:8002/api/cartList/",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const backendCart = response.data?.cart || [];
+
+      const formattedCart = backendCart.map((item) => ({
+        productId: item.product?.id,
+        skuId: item.sku,
+        qty: item.quantity,
+        title: item.product?.title,
+        mainimage: item.product?.mainimage,
+        price: item.product?.sku?.price,
+      }));
+
+      localStorage.setItem(`cart_${email}`, JSON.stringify(formattedCart));
+      setCart(formattedCart);
+    } catch (error) {
+      console.error("Error fetching backend cart:", error);
+    }
+  };
   const toggleWishlist = async (productId, skuId) => {
     const storedUser = localStorage.getItem("userData");
-    if (!storedUser) {
-      toast.warning("Please log in first!");
-      return;
-    }
+    if (!storedUser) return toast.warn("Please login first!");
 
     const user = JSON.parse(storedUser);
-    const token = user?.access_token;
-    const email = user?.email || "guest";
-    const wishlistKey = `wishlist_${email}`;
+    const token = user.access_token;
+    const email = user.email;
+    const wKey = `wishlist_${email}`;
 
-    const localWishlist = JSON.parse(localStorage.getItem(wishlistKey) || "[]");
-    const normalizedWishlist = localWishlist.map((item) =>
-      typeof item === "number" ? { product_id: item, sku_id: null } : item
+    const list = JSON.parse(localStorage.getItem(wKey) || "[]");
+    const normalized = list.map((i) =>
+      typeof i === "number" ? { product_id: i, sku_id: null } : i
     );
 
-    const alreadyExists = normalizedWishlist.some(
-      (item) =>
-        Number(item.product_id) === Number(productId) &&
-        Number(item.sku_id) === Number(skuId)
+    const exists = normalized.some(
+      (i) =>
+        Number(i.product_id) === Number(productId) &&
+        Number(i.sku_id) === Number(skuId)
     );
 
     try {
-      const res = await axios.post(
+      await axios.post(
         "http://192.168.1.94:8002/api/add-wishlist/",
         { product_id: productId, sku_id: skuId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (res.status === 200 || res.status === 201) {
-        let updatedWishlist;
-        if (alreadyExists) {
-          updatedWishlist = normalizedWishlist.filter(
-            (item) =>
-              Number(item.product_id) !== Number(productId) ||
-              Number(item.sku_id) !== Number(skuId)
-          );
-          toast.info("Removed from wishlist!");
-        } else {
-          updatedWishlist = [
-            ...normalizedWishlist,
-            { product_id: productId, sku_id: skuId },
-          ];
-          toast.success("Added to wishlist!");
-        }
+      let updated = [];
 
-        localStorage.setItem(wishlistKey, JSON.stringify(updatedWishlist));
-        setWishlist(updatedWishlist);
-
-        // ✅ Notify other components/tabs
-        window.dispatchEvent(new Event("wishlistUpdated"));
+      if (exists) {
+        updated = normalized.filter(
+          (i) =>
+            Number(i.product_id) !== Number(productId) ||
+            Number(i.sku_id) !== Number(skuId)
+        );
+        toast.info("Removed from wishlist!");
+      } else {
+        updated = [...normalized, { product_id: productId, sku_id: skuId }];
+        toast.success("Added to wishlist!");
       }
-    } catch (error) {
-      console.error("Wishlist error:", error);
-      toast.error(error.response?.data?.message || "Something went wrong!");
+
+      localStorage.setItem(wKey, JSON.stringify(updated));
+      setWishlist(updated);
+      window.dispatchEvent(new Event("wishlistUpdated"));
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong!");
     }
   };
 
-  if (loading) {
-    return (
-      <div className="text-center py-10 text-gray-500 text-xl">Loading...</div>
-    );
+  // ---------------------------------------------
+  // CART TOGGLE (Exact same as Shop.jsx)
+  // ---------------------------------------------
+  const toggleCart = async (productId, skuId, qty = 1, product = null) => {
+    const storedUser = localStorage.getItem("userData");
+
+    // 🧭 Guest user
+    // 🧭 Guest user
+if (!storedUser) {
+  let guestCart = JSON.parse(localStorage.getItem("cart_guest") || "[]");
+
+  const existingIndex = guestCart.findIndex(
+    (item) => item.productId === productId && item.skuId === skuId
+  );
+
+  if (existingIndex !== -1) {
+    guestCart[existingIndex].qty += qty;
+    toast.info("Added to cart!");
+  } else {
+    guestCart.push({
+      productId,
+      skuId,
+      qty,
+      title: product?.title,
+      mainimage: product?.mainimage,
+
+      // 🔥 NOW ADDING DISCOUNT + SALES RATE
+      price: product?.sku?.price,             // original price (MRP)
+      sales_rate: product?.sku?.sales_rate,   // discounted price
+      discount: product?.sku?.discount,       // %
+    });
+
+    toast.success("Added to cart!");
   }
+
+  localStorage.setItem("cart_guest", JSON.stringify(guestCart));
+  setCart(guestCart);
+  window.dispatchEvent(new Event("cartUpdated"));
+  return;
+}
+
+    // 🧭 Logged-in user
+    const user = JSON.parse(storedUser);
+    const token = user?.access_token;
+    const email = user?.email;
+    const cartKey = `cart_${email}`;
+
+    let localCart = JSON.parse(localStorage.getItem(cartKey) || "[]");
+
+    const existingItem = localCart.find(
+      (item) =>
+        Number(item.productId) === Number(productId) &&
+        Number(item.skuId) === Number(skuId)
+    );
+
+    const currentQty = existingItem?.qty || existingItem?.quantity || 0;
+    const newQty = currentQty + qty;
+
+    const formData = new FormData();
+    formData.append("product_id", productId);
+    formData.append("skuid", skuId);
+    formData.append("quantity", newQty);
+
+    try {
+      const response = await axios.post(
+        "http://192.168.1.94:8002/api/addtocart/",
+        formData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        if (existingItem) {
+          existingItem.qty = newQty;
+          toast.info("Added to cart");
+        } else {
+          localCart.push({
+            productId,
+            skuId,
+            qty: newQty,
+            title: product?.title,
+            mainimage: product?.mainimage,
+            price: product?.sku?.price,
+            
+          });
+          toast.success("Added to cart");
+        }
+
+        localStorage.setItem(cartKey, JSON.stringify(localCart));
+        setCart(localCart);
+        window.dispatchEvent(new Event("cartUpdated"));
+      }
+    } catch (err) {
+      console.error("cart error", err);
+      toast.error("Something went wrong!");
+    }
+  };
+
+  
+  if (loading)
+    return (
+      <div className="text-center py-10 text-xl text-gray-500">Loading...</div>
+    );
 
   return (
     <div className="w-[90%] mx-auto">
-      <h2
-        data-aos="fade-right"
-        className="text-center font-semibold text-[#112444] text-3xl my-[40px]"
-      >
+      <h2 className="text-center font-semibold text-[#112444] text-3xl my-[40px]">
         TRENDING COLLECTION
       </h2>
 
-      {products.length === 0 ? (
-        <p className="text-center text-gray-500 text-lg">No products found</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-8 w-[90%] mx-auto sm:grid-cols-2 lg:grid-cols-4">
-          {products.slice(0, 4).map((item) => (
-            <div
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 w-[90%] mx-auto">
+        {products.slice(0, 4).map((item) => {
+        
+          return (
+            <ProductCard
               key={item.id}
-              className="bg-white p-4 m-1 rounded-xl shadow-md flex flex-col overflow-hidden"
-            >
-              <div className="overflow-hidden">
-                <Link to={`/product/${item.id}/${item.sku.id}`}>
-                  <img
-                    src={item.mainimage}
-                    alt={item.name}
-                    className="w-50 mx-auto h-50 object-fit rounded-md transform transition-transform duration-500 ease-in-out hover:scale-110"
-                  />
-                </Link>
-              </div>
+              item={item}
+              inWishlist={wishlist.some(
+                (w) => w.product_id === item.id && w.sku_id === item.sku?.id
+              )}
+              inCart={cart.some(
+                (c) => c.productId === item.id && c.skuId === item.sku?.id
+              )}
+              toggleWishlist={toggleWishlist}
+              toggleCart={toggleCart}
+            />
+          );
+        })}
+      </div>
 
-              <div className="flex items-center justify-between">
-                <Link to={`/product/${item.id}/${item.sku.id}`}>
-                  <h2 className="text-xl font-semibold mt-4 h-13">
-                    {item.title}
-                  </h2>
-                </Link>
-
-                <i
-                  className={`cursor-pointer text-2xl ${
-                    wishlist.some(
-                      (wishItem) =>
-                        Number(wishItem.product_id) === Number(item.id) &&
-                        Number(wishItem.sku_id) === Number(item.sku?.id)
-                    )
-                      ? "fa-solid fa-heart text-red-500"
-                      : "fa-regular fa-heart text-gray-400"
-                  }`}
-                  onClick={() => toggleWishlist(item.id, item.sku?.id)}
-                ></i>
-              </div>
-
-              <p className="text-gray-500 text-sm mt-2">
-                {item.description?.slice(0, 60)}...
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <ToastContainer position="top-right" autoClose={1500} className="mt-15" />
+      <ToastContainer
+        position="top-right"
+        style={{ marginTop: "70px" }}
+        autoClose={1500}
+      />
     </div>
   );
 };

@@ -121,7 +121,7 @@ const Wishlist = () => {
         <div className="w-[90%] mx-auto my-10 animate__animated animate__fadeIn">
           <div className="flex flex-col gap-3.5 justify-center items-center mt-[160px]">
             <i
-              className="fa-solid fa-bag-shopping text-[250px]"
+              className="fa-solid fa-heart text-[250px]"
               style={{ color: "#ced4de" }}
             ></i>
             <p className="text-gray-500 text-lg font-medium mt-2">
@@ -142,20 +142,20 @@ const Wishlist = () => {
           MY WISHLIST
         </h2>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 w-[90%] mx-auto">
           {wishlist.map((item) => (
             <div
               key={item.id}
-              className="bg-white p-4 rounded-xl shadow-md flex flex-col items-center"
+              className="bg-white  p-4 rounded-xl shadow-md flex flex-col items-center"
             >
               <img
                 src={item.mainimage}
                 alt={item.product_name}
-                className="w-full h-60 rounded-md mb-4"
+                className="w-40 h-40 rounded-md mb-4"
               />
               <div className="flex justify-between items-start w-full">
                 <div>
-                  <h3 className="text-lg font-semibold">{item.product_name}</h3>
+                  <h3 className="text-lg font-semibold">{item.product_name.slice(0,10)}</h3>
                   <p className="text-gray-500">₹{item.price}</p>
                 </div>
                 <button

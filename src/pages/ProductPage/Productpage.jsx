@@ -210,7 +210,7 @@ const toggleCart = async (productId, skuId, qty = 1, product = null) => {
 
     if (existingIndex !== -1) {
       guestCart[existingIndex].qty += qty;
-      toast.info("Quantity increased in cart!");
+      toast.info("Added to cart!");
     } else {
       guestCart.push({
         productId,

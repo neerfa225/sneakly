@@ -71,3 +71,38 @@ html, body, #root {
     animation: float3 10s ease-in-out infinite;
   }
 }
+.range-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #112444;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  z-index: 5;
+}
+
+.range-thumb {
+  pointer-events: none; /* track is not clickable */
+}
+
+.range-thumb::-webkit-slider-thumb {
+  pointer-events: all; /* thumb is clickable */
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0px);
+  }
+}
+
