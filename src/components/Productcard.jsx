@@ -8,7 +8,7 @@ const ProductCard = ({
   toggleCart
 }) => {
   return (
-    <div className="bg-white p-4 m-1 rounded-xl shadow-lg flex flex-col h-90">
+    <div className="bg-white p-4 m-1 rounded-xl shadow-lg flex flex-col ">
       <div className="overflow-hidden">
         <Link to={`/product/${item.id}/${item.sku?.id}`}>
           <img
@@ -34,8 +34,8 @@ const ProductCard = ({
         ></i>
       </div>
         <div>₹{item.sku?.price}</div>
-      <p className="text-gray-500 text-sm mt-2 h-20">
-        {item.description?.slice(0, 80)}...
+      <p className="text-gray-500 text-sm mt-2 ">
+        {item.description?.slice(0, 10)}...
       </p>
 
       <button

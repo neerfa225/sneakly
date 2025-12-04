@@ -5,7 +5,7 @@ import Footer from "../../components/Footer";
 import { Link } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import { SERVER_URL } from "../../Services/serverURL";
 const Cart = () => {
   const [cart, setCart] = useState([]);
   const [userKey, setUserKey] = useState("cart_guest");
@@ -52,27 +52,23 @@ const Cart = () => {
     }
   }, []);
 
-  // ✅ Merge guest cart with backend + logged-in cart
   const mergeGuestCart = async (tokenValue, userCartKey) => {
     const guestCart = JSON.parse(localStorage.getItem("cart_guest") || "[]");
 
     if (!guestCart.length) {
-      // No guest cart found → just fetch from backend
       fetchCartFromBackend(tokenValue);
       return;
     }
 
     try {
-      // Step 1: Fetch backend cart first
       const response = await axios.get(
-        "http://192.168.1.94:8002/api/cartList/",
+        `${SERVER_URL}/api/cartList/`,
         {
           headers: { Authorization: `Bearer ${tokenValue}` },
         }
       );
       const backendCart = response.data?.cart || [];
 
-      // Step 2: Loop guest items and merge intelligently
       for (const guestItem of guestCart) {
         const match = backendCart.find(
           (bItem) =>
@@ -80,7 +76,6 @@ const Cart = () => {
             Number(bItem.sku) === Number(guestItem.skuId)
         );
 
-        // ✅ CASE 1: Already exists → update backend quantity = backend + guest
         if (match) {
           const combinedQty =
             (match.quantity || 0) + (guestItem.qty || guestItem.quantity || 1);
@@ -91,23 +86,20 @@ const Cart = () => {
           formData.append("quantity", combinedQty);
 
           await axios.post(
-            "http://192.168.1.94:8002/api/addtocart/",
+            `${SERVER_URL}/api/addtocart/`,
             formData,
             {
               headers: { Authorization: `Bearer ${tokenValue}` },
             }
           );
-        }
-
-        // ✅ CASE 2: Doesn’t exist → add fresh
-        else {
+        } else {
           const formData = new FormData();
           formData.append("product_id", guestItem.productId);
           formData.append("skuid", guestItem.skuId);
           formData.append("quantity", guestItem.qty || guestItem.quantity || 1);
 
           await axios.post(
-            "http://192.168.1.94:8002/api/addtocart/",
+            `${SERVER_URL}/api/addtocart/`,
             formData,
             {
               headers: { Authorization: `Bearer ${tokenValue}` },
@@ -116,18 +108,15 @@ const Cart = () => {
         }
       }
 
-      // Step 3: Clear guest cart safely
       localStorage.removeItem("cart_guest");
 
-      // Step 4: Refresh backend cart
       await fetchCartFromBackend(tokenValue);
 
-      // Step 5: Notify other pages
       window.dispatchEvent(new Event("cartUpdated"));
     } catch (error) {
       console.error("Guest cart merge failed:", error);
       toast.error("Error merging guest cart!");
-      // Still clear guest cart to avoid infinite duplication
+
       localStorage.removeItem("cart_guest");
       fetchCartFromBackend(tokenValue);
     }
@@ -136,14 +125,13 @@ const Cart = () => {
   const fetchCartFromBackend = async (tokenValue) => {
     try {
       const response = await axios.get(
-        "http://192.168.1.94:8002/api/cartList/",
+        `${SERVER_URL}/api/cartList/`,
         { headers: { Authorization: `Bearer ${tokenValue}` } }
       );
 
       const backendCart = response.data?.cart || [];
       setCart(backendCart);
 
-      // 🧠 OPTIONAL: also save locally for inspection
       const storedUser = JSON.parse(localStorage.getItem("userData"));
       const email = storedUser?.email;
       if (email) {
@@ -158,12 +146,11 @@ const Cart = () => {
   };
 
   const updateCart = async (productId, newQty, skuId = null) => {
-    if (newQty < 1) return; // prevent qty = 0
+    if (newQty < 1) return;
 
     const storedUser = JSON.parse(localStorage.getItem("userData"));
     const token = storedUser?.access_token;
 
-    // 🧭 Guest user — only local update
     if (!token) {
       const updated = cart.map((item) => {
         if (item.productId === productId) {
@@ -173,11 +160,10 @@ const Cart = () => {
       });
       setCart(updated);
       localStorage.setItem("cart_guest", JSON.stringify(updated));
-
+window.dispatchEvent(new Event("cartUpdated"));
       return;
     }
 
-    // 🧭 Logged-in user — sync with backend
     try {
       const formData = new FormData();
       formData.append("product_id", productId);
@@ -185,7 +171,7 @@ const Cart = () => {
       formData.append("quantity", newQty);
 
       const response = await axios.post(
-        "http://192.168.1.94:8002/api/addtocart/",
+        `${SERVER_URL}/api/addtocart/`,
         formData,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -193,7 +179,6 @@ const Cart = () => {
       );
 
       if (response.status === 200 || response.status === 201) {
-        // Update local cart immediately for responsiveness
         const updated = cart.map((item) => {
           if (item.product?.id === productId) {
             return { ...item, quantity: newQty };
@@ -202,21 +187,18 @@ const Cart = () => {
         });
         setCart(updated);
 
-        // Also refresh from backend (optional)
         await fetchCartFromBackend(token);
+         window.dispatchEvent(new Event("cartUpdated"));
       }
     } catch (err) {
       console.error("Error updating quantity:", err);
       toast.error("Failed to update quantity!");
     }
   };
-
-  // ✅ Remove item (handles guest + logged-in)
   const removeItem = async (productId, skuId) => {
     const userData = JSON.parse(localStorage.getItem("userData"));
     const token = userData?.access_token;
 
-    // Guest user
     if (!token) {
       const updated = cart.filter(
         (item) => !(item.productId === productId && item.skuId === skuId)
@@ -224,10 +206,10 @@ const Cart = () => {
       setCart(updated);
       localStorage.setItem(userKey, JSON.stringify(updated));
       toast.success("Item removed from cart!");
+       window.dispatchEvent(new Event("cartUpdated"));
       return;
     }
 
-    // Logged-in user
     try {
       const updated = cart.filter(
         (item) => !(item.product.id === productId && item.sku === skuId)
@@ -240,7 +222,7 @@ const Cart = () => {
       formData.append("skuid", skuId);
 
       const response = await axios.post(
-        "http://192.168.1.94:8002/api/RomoveFromcart/",
+        `${SERVER_URL}/api/RomoveFromcart/`,
         formData,
         {
           headers: {
@@ -253,14 +235,14 @@ const Cart = () => {
         toast.success("Item removed from cart!");
       } else {
         toast.error("Failed to remove item from backend.");
-      }
+         
+      }window.dispatchEvent(new Event("cartUpdated"));
     } catch (error) {
       console.error("Remove from cart error:", error);
       toast.error("Error removing item from cart.");
     }
   };
 
-  // ✅ Loading & Empty States
   if (loading) {
     return (
       <>
@@ -293,55 +275,51 @@ const Cart = () => {
     );
   }
 
-
   const totalItems = cart.reduce(
     (sum, item) => sum + (item.qty || item.quantity || 1),
     0
   );
-const totalPrice = cart.reduce((sum, item) => {
-  const price =
-    item.product?.sku?.price ||
-    item.product?.price ||
-    item.price;
+  const totalPrice = cart.reduce((sum, item) => {
+    const price = item.product?.sku?.price || item.product?.price || item.price;
 
-  const qty = item.qty || item.quantity || 1;
+    const qty = item.qty || item.quantity || 1;
 
-  return sum + price * qty;
-}, 0);
-
+    return sum + price * qty;
+  }, 0);
 
 const Subtotal = cart.reduce((sum, item) => {
-  const salesRate =
+  const salesRate = Number(
     item.product?.sku?.sales_rate ||
     item.product?.sales_rate ||
-    item.sales_rate;
+    item.sales_rate ||
+    0
+  );
 
-  const qty = item.qty || item.quantity || 1;
+  const qty = Number(item.qty || item.quantity || 1);
 
   return sum + salesRate * qty;
 }, 0);
 
-// DISCOUNT (sales_rate * discount% * qty)
+
 const discount = cart.reduce((sum, item) => {
-  const price =
+  const price = Number(
     item.product?.sku?.price ||
     item.product?.price ||
-    item.price;
+    item.price ||
+    0
+  );
 
-  const salesRate =
+  const salesRate = Number(
     item.product?.sku?.sales_rate ||
     item.product?.sales_rate ||
-    item.sales_rate;
+    item.sales_rate ||
+    price 
+  );
 
-  const qty = item.qty || item.quantity || 1;
+  const qty = Number(item.qty || item.quantity || 1);
 
   return sum + (price - salesRate) * qty;
 }, 0);
-
-
-// const discount = cart.map(item => item.product?.sku?.discount);
-
-
 
   return (
     <>
@@ -366,21 +344,20 @@ const discount = cart.reduce((sum, item) => {
                       {item.product?.title || item.title}
                     </h2>
                     <div className="flex items-center gap-2">
-  <p className="text-gray-700 text-[18px] font-semibold">
-    ₹{ item.product?.sku?.price ||
-    item.product?.price ||
-    item.price}
-  </p>
+                      <p className="text-gray-700 text-[18px] font-semibold">
+                        ₹
+                        {item.product?.sku?.price ||
+                          item.product?.price ||
+                          item.price}
+                      </p>
 
-  {/* Discount Tag */}
-{(item.product?.sku?.discount || item.discount) && (
-  <span className="bg-blue-950 text-white text-[10px] px-1 py-1 rounded">
-    {item.product?.sku?.discount || item.discount}% OFF
-  </span>
-)}
-
-</div>
-
+                      
+                      {(item.product?.sku?.discount || item.discount) && (
+                        <span className="bg-blue-950 text-white text-[10px] px-1 py-1 rounded">
+                          {item.product?.sku?.discount || item.discount}% OFF
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </Link>

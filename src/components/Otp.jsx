@@ -3,6 +3,7 @@ import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
+import { SERVER_URL } from '../Services/serverURL';
 
 const VerifyOtp = () => {
   const navigate = useNavigate();
@@ -18,12 +19,12 @@ const VerifyOtp = () => {
 
     try {
 
-         await axios.post("http://192.168.1.94:8002/user/verify-token/", {
+         await axios.post(`${SERVER_URL}/user/verify-token/`, {
         email: formData.email,
         otp: otp,
       });
 
-      await axios.post("http://192.168.1.94:8002/user/register/", {
+      await axios.post(`${SERVER_URL}/user/register/`, {
         first_name: formData.firstname,
         last_name: formData.lastname,
         email: formData.email,

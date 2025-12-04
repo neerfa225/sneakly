@@ -4,20 +4,14 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ProductCard from "./Productcard";
+import { SERVER_URL } from "../Services/serverURL";
 const Productdisplay = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Wishlist + Cart
   const [wishlist, setWishlist] = useState([]);
   const [wishlistKey, setWishlistKey] = useState("wishlist_guest");
-
   const [cart, setCart] = useState([]);
   const [cartKey, setCartKey] = useState("cart_guest");
-
-  // ---------------------------------------------
-  // LOAD USER + WISHLIST + CART (Same as Shop.jsx)
-  // ---------------------------------------------
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userData");
@@ -31,7 +25,6 @@ const Productdisplay = () => {
       setWishlistKey(wKey);
       setCartKey(cKey);
 
-      // Load wishlist
       const savedWishlist = JSON.parse(localStorage.getItem(wKey) || "[]");
       const normalizedWishlist = savedWishlist.map((i) => ({
         product_id: i.product_id || i.product,
@@ -39,11 +32,9 @@ const Productdisplay = () => {
       }));
       setWishlist(normalizedWishlist);
 
-      // Load cart
       const savedCart = JSON.parse(localStorage.getItem(cKey) || "[]");
       setCart(savedCart);
     } else {
-      // Guest Keys
       setWishlistKey("wishlist_guest");
       setCartKey("cart_guest");
 
@@ -62,9 +53,6 @@ const Productdisplay = () => {
     }
   }, []);
 
-  // ---------------------------------------------
-  // CART SYNC ACROSS TABS (Same as Shop.jsx)
-  // ---------------------------------------------
   useEffect(() => {
     const handleFocus = () => {
       const storedUser = JSON.parse(localStorage.getItem("userData") || "{}");
@@ -125,7 +113,7 @@ const Productdisplay = () => {
     const fetchProducts = async () => {
       try {
         const response = await axios.get(
-          "http://192.168.1.94:8002/api/product-list/"
+          `${SERVER_URL}/api/product-list/`
         );
         setProducts(response.data.results || response.data || []);
       } catch (err) {
@@ -147,7 +135,7 @@ const Productdisplay = () => {
       if (!token || !email) return;
 
       const response = await axios.get(
-        "http://192.168.1.94:8002/api/cartList/",
+        `${SERVER_URL}/api/cartList/`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -192,7 +180,7 @@ const Productdisplay = () => {
 
     try {
       await axios.post(
-        "http://192.168.1.94:8002/api/add-wishlist/",
+        `${SERVER_URL}/api/add-wishlist/`,
         { product_id: productId, sku_id: skuId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -220,48 +208,40 @@ const Productdisplay = () => {
     }
   };
 
-  // ---------------------------------------------
-  // CART TOGGLE (Exact same as Shop.jsx)
-  // ---------------------------------------------
   const toggleCart = async (productId, skuId, qty = 1, product = null) => {
     const storedUser = localStorage.getItem("userData");
 
-    // 🧭 Guest user
-    // 🧭 Guest user
-if (!storedUser) {
-  let guestCart = JSON.parse(localStorage.getItem("cart_guest") || "[]");
+    if (!storedUser) {
+      let guestCart = JSON.parse(localStorage.getItem("cart_guest") || "[]");
 
-  const existingIndex = guestCart.findIndex(
-    (item) => item.productId === productId && item.skuId === skuId
-  );
+      const existingIndex = guestCart.findIndex(
+        (item) => item.productId === productId && item.skuId === skuId
+      );
 
-  if (existingIndex !== -1) {
-    guestCart[existingIndex].qty += qty;
-    toast.info("Added to cart!");
-  } else {
-    guestCart.push({
-      productId,
-      skuId,
-      qty,
-      title: product?.title,
-      mainimage: product?.mainimage,
+      if (existingIndex !== -1) {
+        guestCart[existingIndex].qty += qty;
+        toast.info("Added to cart!");
+      } else {
+        guestCart.push({
+          productId,
+          skuId,
+          qty,
+          title: product?.title,
+          mainimage: product?.mainimage,
+          price: product?.sku?.price,
+          sales_rate: product?.sku?.sales_rate,
+          discount: product?.sku?.discount,
+        });
 
-      // 🔥 NOW ADDING DISCOUNT + SALES RATE
-      price: product?.sku?.price,             // original price (MRP)
-      sales_rate: product?.sku?.sales_rate,   // discounted price
-      discount: product?.sku?.discount,       // %
-    });
+        toast.success("Added to cart!");
+      }
 
-    toast.success("Added to cart!");
-  }
+      localStorage.setItem("cart_guest", JSON.stringify(guestCart));
+      setCart(guestCart);
+      window.dispatchEvent(new Event("cartUpdated"));
+      return;
+    }
 
-  localStorage.setItem("cart_guest", JSON.stringify(guestCart));
-  setCart(guestCart);
-  window.dispatchEvent(new Event("cartUpdated"));
-  return;
-}
-
-    // 🧭 Logged-in user
     const user = JSON.parse(storedUser);
     const token = user?.access_token;
     const email = user?.email;
@@ -285,7 +265,7 @@ if (!storedUser) {
 
     try {
       const response = await axios.post(
-        "http://192.168.1.94:8002/api/addtocart/",
+        `${SERVER_URL}/api/addtocart/`,
         formData,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -304,7 +284,6 @@ if (!storedUser) {
             title: product?.title,
             mainimage: product?.mainimage,
             price: product?.sku?.price,
-            
           });
           toast.success("Added to cart");
         }
@@ -319,7 +298,6 @@ if (!storedUser) {
     }
   };
 
-  
   if (loading)
     return (
       <div className="text-center py-10 text-xl text-gray-500">Loading...</div>
@@ -333,7 +311,6 @@ if (!storedUser) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 w-[90%] mx-auto">
         {products.slice(0, 4).map((item) => {
-        
           return (
             <ProductCard
               key={item.id}

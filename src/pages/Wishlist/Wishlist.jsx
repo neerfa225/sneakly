@@ -2,12 +2,11 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-
+import { SERVER_URL } from "../../Services/serverURL";
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Normalize wishlist data into consistent format
   const normalizeWishlist = (items) =>
     items.map((item) => ({
       id: item.id,
@@ -16,64 +15,60 @@ const Wishlist = () => {
       product_name: item.product_name || item.name,
       mainimage: item.mainimage?.startsWith("http")
         ? item.mainimage
-        : `http://192.168.1.94:8002${item.mainimage}`,
+        : `${SERVER_URL}${item.mainimage}`,
       price: item.sku?.price || item.price || 0,
     }));
 
-  // ✅ Fetch and sync wishlist
- useEffect(() => {
-  const storedUser = localStorage.getItem("userData");
-  if (!storedUser) {
-    setLoading(false);
-    return;
-  }
-
-  const user = JSON.parse(storedUser);
-  const token = user?.access_token;
-  const email = user?.email;
-  const wishlistKey = `wishlist_${email}`;
-
-  const loadWishlist = () => {
-    const savedWishlist = JSON.parse(localStorage.getItem(wishlistKey) || "[]");
-    setWishlist(normalizeWishlist(savedWishlist));
-  };
-
-  // ✅ Load once initially
-  loadWishlist();
-
-  // ✅ Fetch latest from backend (once)
-  axios
-    .get("http://192.168.1.94:8002/api/list-wishlist/", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    .then((res) => {
-      const fetchedWishlist = normalizeWishlist(res.data?.data || []);
-      setWishlist(fetchedWishlist);
-      localStorage.setItem(wishlistKey, JSON.stringify(fetchedWishlist));
-    })
-    .catch((err) => {
-      console.error("Error fetching wishlist:", err);
-    })
-    .finally(() => setLoading(false));
-
-  // ✅ Listen for both storage events and custom triggers from same tab
-  const handleStorageUpdate = (e) => {
-    if (e.key === wishlistKey || e.type === "wishlistUpdated") {
-      loadWishlist();
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userData");
+    if (!storedUser) {
+      setLoading(false);
+      return;
     }
-  };
 
-  window.addEventListener("storage", handleStorageUpdate);
-  window.addEventListener("wishlistUpdated", handleStorageUpdate);
+    const user = JSON.parse(storedUser);
+    const token = user?.access_token;
+    const email = user?.email;
+    const wishlistKey = `wishlist_${email}`;
 
-  return () => {
-    window.removeEventListener("storage", handleStorageUpdate);
-    window.removeEventListener("wishlistUpdated", handleStorageUpdate);
-  };
-}, []);
+    const loadWishlist = () => {
+      const savedWishlist = JSON.parse(
+        localStorage.getItem(wishlistKey) || "[]"
+      );
+      setWishlist(normalizeWishlist(savedWishlist));
+    };
 
+    loadWishlist();
 
-  // ✅ Remove wishlist item (sync backend + localStorage)
+    axios
+      .get(`${SERVER_URL}/api/list-wishlist/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        const fetchedWishlist = normalizeWishlist(res.data?.data || []);
+        setWishlist(fetchedWishlist);
+        localStorage.setItem(wishlistKey, JSON.stringify(fetchedWishlist));
+      })
+      .catch((err) => {
+        console.error("Error fetching wishlist:", err);
+      })
+      .finally(() => setLoading(false));
+
+    const handleStorageUpdate = (e) => {
+      if (e.key === wishlistKey || e.type === "wishlistUpdated") {
+        loadWishlist();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageUpdate);
+    window.addEventListener("wishlistUpdated", handleStorageUpdate);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageUpdate);
+      window.removeEventListener("wishlistUpdated", handleStorageUpdate);
+    };
+  }, []);
+
   const removeItem = async (wishlistId) => {
     const storedUser = localStorage.getItem("userData");
     if (!storedUser) return;
@@ -85,17 +80,16 @@ const Wishlist = () => {
 
     try {
       await axios.post(
-        "http://192.168.1.94:8002/api/remove-wishlist/",
+        `${SERVER_URL}/api/remove-wishlist/`,
         { wishlist_ids: [wishlistId] },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // ✅ Update local state
       const updatedWishlist = wishlist.filter((item) => item.id !== wishlistId);
       setWishlist(updatedWishlist);
 
-      // ✅ Update localStorage
       localStorage.setItem(wishlistKey, JSON.stringify(updatedWishlist));
+       window.dispatchEvent(new Event("wishlistUpdated"));
     } catch (err) {
       console.error("Error removing wishlist item:", err);
       alert("Failed to remove item from wishlist.");
@@ -151,11 +145,13 @@ const Wishlist = () => {
               <img
                 src={item.mainimage}
                 alt={item.product_name}
-                className="w-40 h-40 rounded-md mb-4"
+                className="w-40 h-47 rounded-md mb-4"
               />
               <div className="flex justify-between items-start w-full">
                 <div>
-                  <h3 className="text-lg font-semibold">{item.product_name.slice(0,10)}</h3>
+                  <h3 className="text-lg font-semibold">
+                    {item.product_name.slice(0, 10)}
+                  </h3>
                   <p className="text-gray-500">₹{item.price}</p>
                 </div>
                 <button

@@ -1,23 +1,37 @@
 import React, { useState, useEffect } from "react";
 import Logo from "../images/Logo.png";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { SERVER_URL } from "../Services/serverURL";
 
 const Navbar = () => {
-  const [menu, setMenu] = useState("home");
   const [mobileMenu, setMobileMenu] = useState(false);
   const [user, setUser] = useState(null);
   const [categories, setCategories] = useState([]);
 
   const [openCategoryMenu, setOpenCategoryMenu] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+  const cartKey = user ? `cart_${user.email}` : "cart_guest";
+  const [wishlistCount, setWishlistCount] = useState(0);
+
+  const wishlistKey = user ? `wishlist_${user.email}` : "wishlist_guest";
+
+  const location = useLocation();
 
   const navigate = useNavigate();
+  const activeMenu =
+    location.pathname === "/"
+      ? "home"
+      : location.pathname.startsWith("/shop")
+      ? "category"
+      : location.pathname === "/contact"
+      ? "contact"
+      : "";
 
-  // 🔄 Fetch Product Categories for Navbar
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get("http://192.168.1.94:8002/api/product-list/");
+        const res = await axios.get(`${SERVER_URL}/api/product-list/`);
 
         const full = res.data.results || res.data || [];
         const map = {};
@@ -60,12 +74,46 @@ const Navbar = () => {
     navigate(`/shop?category=${id}`);
     setOpenCategoryMenu(false);
   };
+  useEffect(() => {
+    const updateCount = () => {
+      const cart = JSON.parse(localStorage.getItem(cartKey) || "[]");
+      const totalQty = cart.reduce(
+        (sum, item) => sum + (item.qty || item.quantity || 0),
+        0
+      );
+      setCartCount(totalQty);
+    };
+
+    updateCount(); // run initially
+
+    window.addEventListener("cartUpdated", updateCount);
+    window.addEventListener("storage", updateCount);
+
+    return () => {
+      window.removeEventListener("cartUpdated", updateCount);
+      window.removeEventListener("storage", updateCount);
+    };
+  }, [user]);
+  useEffect(() => {
+    const updateWishlist = () => {
+      const saved = JSON.parse(localStorage.getItem(wishlistKey) || "[]");
+      setWishlistCount(saved.length);
+    };
+
+    updateWishlist();
+
+    window.addEventListener("wishlistUpdated", updateWishlist);
+    window.addEventListener("storage", updateWishlist);
+
+    return () => {
+      window.removeEventListener("wishlistUpdated", updateWishlist);
+      window.removeEventListener("storage", updateWishlist);
+    };
+  }, [user]);
 
   return (
     <div className="bg-white shadow-md fixed top-0 left-0 w-full h-[70px] flex flex-col items-center z-50">
       <div className="w-[90%] flex justify-between items-center text-[#112444] font-medium">
-
-        {/* LOGO */}
         <Link to="/">
           <img
             src={Logo}
@@ -74,92 +122,81 @@ const Navbar = () => {
           />
         </Link>
 
-        {/* DESKTOP MENU */}
         <ul className="hidden md:flex gap-[30px] md:mt-2 md:items-center text-[17px] font-semibold relative">
-
-          {/* HOME */}
           <Link
             to="/"
             className={`pb-1 border-b-2 ${
-              menu === "home" ? "border-[#112444] text-[#112444]" : "border-transparent text-gray-500"
+              activeMenu === "home"
+                ? "border-[#112444] text-[#112444]"
+                : "border-transparent text-gray-500"
             }`}
-            onMouseEnter={() => setMenu("home")}
-            onMouseLeave={() => setMenu("")}
           >
             Home
           </Link>
 
-          {/* SHOP */}
-          {/* <Link
-            to="/shop"
-            className={`pb-1 border-b-2 ${
-              menu === "shop" ? "border-[#112444] text-[#112444]" : "border-transparent text-gray-500"
-            }`}
-            onMouseEnter={() => setMenu("shop")}
-            onMouseLeave={() => setMenu("")}
-          >
-            Shop
-          </Link> */}
-
-          {/* CATEGORY DROPDOWN */}
           <div
-  className="relative group"
-  onMouseEnter={() => setOpenCategoryMenu(true)}
-  onMouseLeave={() => setOpenCategoryMenu(false)}
->
-  <span className="
-      cursor-pointer pb-1 
-      border-b-2 border-transparent 
-      flex items-center gap-1 font-semibold 
-      text-gray-500
-      group-hover:text-[#112444]
-      
-    "
-  >
-    Categories
-  </span>
-
-  {openCategoryMenu && (
-    <div className="absolute left-0 top-7 bg-white shadow-lg rounded-md p-3 w-[200px] z-50">
-      {categories.length === 0 ? (
-        <p className="text-sm text-gray-500">Loading...</p>
-      ) : (
-        categories.map((cat) => (
-          <Link
-            key={cat.category_id}
-            to={`/shop?category=${cat.category_id}`}
-            className="block p-2 hover:bg-gray-100"
+            className="relative group"
+            onMouseEnter={() => setOpenCategoryMenu(true)}
+            onMouseLeave={() => setOpenCategoryMenu(false)}
           >
-            {cat.category_name}
-          </Link>
-        ))
-      )}
-    </div>
-  )}
-</div>
+            <span
+              className={`pb-1 inline-block border-b-2 ${
+                activeMenu === "category"
+                  ? "border-[#112444] text-[#112444]"
+                  : "border-transparent text-gray-500"
+              }`}
+            >
+              Categories
+            </span>
 
+            {openCategoryMenu && (
+              <div className="absolute left-0 top-7 bg-white shadow-lg rounded-md p-3 w-[200px] z-50">
+                {categories.length === 0 ? (
+                  <p className="text-sm text-gray-500">Loading...</p>
+                ) : (
+                  categories.map((cat) => (
+                    <Link
+                      key={cat.category_id}
+                      to={`/shop?category=${cat.category_id}`}
+                      className="block p-2 hover:bg-gray-100"
+                    >
+                      {cat.category_name}
+                    </Link>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
 
-          {/* CONTACT */}
           <a
             href="#contact"
             className={`pb-1 border-b-2 ${
-              menu === "contact" ? "border-[#112444] text-[#112444]" : "border-transparent text-gray-500"
+              activeMenu === "contact"
+                ? "border-[#112444] text-[#112444]"
+                : "border-transparent text-gray-500"
             }`}
-            onMouseEnter={() => setMenu("contact")}
-            onMouseLeave={() => setMenu("")}
           >
             Contact
           </a>
         </ul>
 
-        {/* USER + CART + WISHLIST */}
         <div className="hidden md:flex gap-[25px] items-center text-[18px]">
-          <Link to="/cart">
+          <Link to="/cart" className="relative">
             <i className="fa-solid fa-bag-shopping text-2xl cursor-pointer"></i>
+
+            {cartCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[12px] w-5 h-5 flex items-center justify-center rounded-full">
+                {cartCount}
+              </span>
+            )}
           </Link>
 
-          <Link to="/wish">
-            <i className="fa-solid fa-heart cursor-pointer"></i>
+          <Link to="/wish" className="relative">
+            <i className="fa-solid fa-heart text-2xl cursor-pointer"></i>
+
+            {wishlistCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-600 rounded-full"></span>
+            )}
           </Link>
 
           {user ? (
@@ -178,23 +215,25 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* MOBILE MENU ICON */}
         <div
           className="md:hidden text-2xl cursor-pointer"
           onClick={() => setMobileMenu(!mobileMenu)}
         >
-          <i className={mobileMenu ? "fa-solid fa-xmark" : "fa-solid fa-bars"}></i>
+          <i
+            className={mobileMenu ? "fa-solid fa-xmark" : "fa-solid fa-bars"}
+          ></i>
         </div>
       </div>
 
-      {/* MOBILE DROPDOWN */}
       {mobileMenu && (
         <div className="flex flex-col items-center gap-3 p-5 bg-white w-full md:hidden">
+          <Link to="/" onClick={() => setMobileMenu(false)}>
+            Home
+          </Link>
+          <Link to="/shop" onClick={() => setMobileMenu(false)}>
+            Shop
+          </Link>
 
-          <Link to="/" onClick={() => setMobileMenu(false)}>Home</Link>
-          <Link to="/shop" onClick={() => setMobileMenu(false)}>Shop</Link>
-
-          {/* MOBILE CATEGORIES */}
           <div className="w-full text-center">
             <p className="font-semibold text-lg mb-2">Categories</p>
 
@@ -212,8 +251,12 @@ const Navbar = () => {
             ))}
           </div>
 
-          <Link to="/cart" onClick={() => setMobileMenu(false)}>Cart</Link>
-          <Link to="/wish" onClick={() => setMobileMenu(false)}>Wishlist</Link>
+          <Link to="/cart" onClick={() => setMobileMenu(false)}>
+            Cart
+          </Link>
+          <Link to="/wish" onClick={() => setMobileMenu(false)}>
+            Wishlist
+          </Link>
 
           {user ? (
             <button
@@ -232,7 +275,6 @@ const Navbar = () => {
               </button>
             </Link>
           )}
-
         </div>
       )}
     </div>

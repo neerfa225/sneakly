@@ -7,4 +7,4 @@
 //   )
 // }
 
-// export default LoginReg
+// export default LoginRegz

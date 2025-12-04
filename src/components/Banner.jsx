@@ -17,7 +17,7 @@ const Banner = () => {
       </h2>
 
       <div className='w-[90%] mx-auto flex flex-wrap gap-6 justify-center sm:justify-around'>
-        {/* Men Banner */}
+
         <div className='relative w-full sm:w-[45%] mb-6'>
           <img
             src={Menbanner}
@@ -31,7 +31,7 @@ const Banner = () => {
           </div>
         </div>
 
-        {/* Women Banner */}
+       
         <div  className='relative w-full sm:w-[45%] mb-6 ' >
           <img
             src={Womenbanner}
